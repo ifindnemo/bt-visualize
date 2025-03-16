@@ -1,0 +1,223 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Bài tập DATA VISUALIZE</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="" name="keywords">
+    <meta content="" name="description">
+    <link rel="icon" type="image/png" href="tqhfavicon.png">
+    
+    <!-- Tối ưu tải font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Google Font với display=swap -->
+    <link href="https://fonts.googleapis.com/css2?family=Sofia&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"/>
+
+    <link rel="stylesheet" href="css/chartstyle.css">
+    <link rel="stylesheet" href="css/selectlist.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+</head>
+<body>
+    <div class="main">
+        <div class="select-menu">
+            <div class="menu-btn" id="menuBtn">
+                <span class="btn-text">Bạn thích chart nào?</span>
+                <i class="fas fa-caret-down"></i>
+            </div>
+    
+            <ul class="options" id="optionsList">
+                <li class="option" data-chart="chart1">
+                    <i class="fa-regular fa-circle-right" style="color: #171515"></i>
+                    <p>Q1</p>
+                    <span class="option-text" style="margin-left: 10px; font-size: 14px;">Doanh số bán hàng theo Mặt hàng</span>
+                </li>
+                <li class="option" data-chart="chart2">
+                    <i class="fa-regular fa-circle-right" style="color: #171515"></i>
+                    <p>Q2</p>
+                    <span class="option-text" style="margin-left: 10px; font-size: 14px;">Doanh số bán hàng theo Nhóm hàng</span>
+                </li>
+                <li class="option" data-chart="chart3">
+                    <i class="fa-regular fa-circle-right" style="color: #171515"></i>
+                    <p>Q3</p>
+                    <span class="option-text" style="margin-left: 10px; font-size: 14px;">Doanh số bán hàng theo Tháng</span>
+                </li>
+                <li class="option" data-chart="chart4">
+                    <i class="fa-regular fa-circle-right" style="color: #171515"></i>
+                    <p>Q4</p>
+                    <span class="option-text" style="margin-left: 10px; font-size: 14px;">Doanh số bán hàng trung bình theo Ngày trong tuần</span>
+                </li>
+                <li class="option" data-chart="chart5">
+                    <i class="fa-regular fa-circle-right" style="color: #171515"></i>
+                    <p>Q5</p>
+                    <span class="option-text" style="margin-left: 10px; font-size: 14px;">Doanh số bán hàng trung bình theo Ngày trong tháng</span>
+                </li>
+                <li class="option" data-chart="chart6">
+                    <i class="fa-regular fa-circle-right" style="color: #171515"></i>
+                    <p>Q6</p>
+                    <span class="option-text" style="margin-left: 10px; font-size: 14px;">Doanh số bán hàng trung bình theo Khung giờ</span>
+                </li>
+                <li class="option" data-chart="chart7">
+                    <i class="fa-regular fa-circle-right" style="color: #171515"></i>
+                    <p>Q7</p>
+                    <span class="option-text" style="margin-left: 10px; font-size: 14px;">Xác suất bán hàng theo Nhóm hàng</span>
+                </li>
+                <li class="option" data-chart="chart8">
+                    <i class="fa-regular fa-circle-right" style="color: #171515"></i>
+                    <p>Q8</p>
+                    <span class="option-text" style="margin-left: 10px; font-size: 14px;">Xác suất bán hàng của Nhóm hàng theo Tháng</span>
+                </li>
+                <li class="option" data-chart="chart9">
+                    <i class="fa-regular fa-circle-right" style="color: #171515"></i>
+                    <p>Q9</p>
+                    <span class="option-text" style="margin-left: 10px; font-size: 14px;">Xác suất bán hàng của Mặt hàng theo Nhóm hàng</span>
+                </li>
+                <li class="option" data-chart="chart10">
+                    <i class="fa-regular fa-circle-right" style="color: #171515"></i>
+                    <p>Q10</p>
+                    <span class="option-text" style="margin-left: 10px; font-size: 14px;">Xác suất bán hàng của Mặt hàng theo Nhóm hàng theo Tháng</span>
+                </li>
+                <li class="option" data-chart="chart11">
+                    <i class="fa-regular fa-circle-right" style="color: #171515"></i>
+                    <p>Q11</p>
+                    <span class="option-text" style="margin-left: 10px; font-size: 14px;">Phân phối Lượt mua hàng</span>
+                </li>
+                <li class="option" data-chart="chart12">
+                    <i class="fa-regular fa-circle-right" style="color: #171515"></i>
+                    <p>Q12</p>
+                    <span class="option-text" style="margin-left: 10px; font-size: 14px;">Phân phối Mức chi trả của Khách hàng</span>
+                </li>
+            </ul>
+        </div>
+        <div class="container">
+            <h2>Doanh số bán hàng theo Mặt hàng</h2>
+            <div class="chart" id="chart"></div>
+        </div>
+    </div>
+    <div class="main">
+        <div class="bigchart" id="chart"></div>
+    </div>
+    <script src="js/multichart.js"></script>
+    <script src="js/selectlist.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const menuBtn = document.getElementById('menuBtn');
+            const optionsList = document.getElementById('optionsList');
+            const chartTitle = document.querySelector('h2');
+        
+            // Mở/đóng menu khi click vào nút
+            menuBtn.addEventListener('click', function () {
+                optionsList.classList.toggle('show');
+            });
+        
+            // Sửa phần xử lý click như sau:
+            optionsList.addEventListener('click', function (e) {
+                const option = e.target.closest('.option');
+                if (option && option.dataset.chart) { // Thêm check tồn tại data-chart
+                    const selectedText = option.querySelector('.option-text').textContent;
+                    chartTitle.textContent = selectedText;
+        
+                    const chartType = option.dataset.chart;
+                    if (chartType === 'chart1') {
+                        drawChart1();
+                    } else if (chartType === 'chart2') {
+                        drawChart2();
+                    } else if (chartType === 'chart3') {
+                        drawChart3();
+                    } else if (chartType === 'chart4') {
+                        drawChart4();
+                    } else if (chartType === 'chart5') {
+                        drawChart5();
+                    } else if (chartType === 'chart6') {
+                        drawChart6();
+                    } else if (chartType === 'chart7') {
+                        drawChart7();
+                    } else if (chartType === 'chart8') {
+                        drawChart8();
+                    } else if (chartType === 'chart9') {
+                        notavailableChart();
+                    } else if (chartType === 'chart10') {
+                        notavailableChart();
+                    } else if (chartType === 'chart11') {
+                        notavailableChart();
+                    } else if (chartType === 'chart12') {
+                        notavailableChart();
+                    }
+        
+                    optionsList.classList.remove('show');
+                }
+            });
+        
+            // Thêm code D3 thực tế vào các hàm drawChart
+            window.drawChart1 = function() {
+                d3.select('#chart').html('');
+                console.log('Vẽ chart 1');
+            };
+        
+            window.drawChart2 = function() {
+                d3.select('#chart').html('');
+                console.log('Vẽ chart 2');
+            };
+        
+            window.drawChart3 = function() {
+                d3.select('#chart').html('');
+                console.log('Vẽ chart 3');
+            };
+        
+            window.drawChart4 = function() {
+                d3.select('#chart').html('');
+                console.log('Vẽ chart 4');
+            };
+        
+            window.drawChart5 = function() {
+                d3.select('#chart').html('');
+                console.log('Vẽ chart 5');
+            };
+        
+            window.drawChart6 = function() {
+                d3.select('#chart').html('');
+                console.log('Vẽ chart 6');
+            };
+        
+            window.drawChart7 = function() {
+                d3.select('#chart').html('');
+                console.log('Vẽ chart 7');
+            };
+        
+            window.drawChart8 = function() {
+                d3.select('#chart').html('');
+                console.log('Vẽ chart 8');
+            };
+        
+            window.drawChart9 = function() {
+                d3.select('#chart').html('');
+                console.log('Vẽ chart 9');
+            };
+        
+            window.drawChart10 = function() {
+                d3.select('#chart').html('');
+                console.log('Vẽ chart 10');
+            };
+        
+            window.drawChart11 = function() {
+                d3.select('#chart').html('');
+                console.log('Vẽ chart 11');
+            };
+        
+            window.drawChart12 = function() {
+                d3.select('#chart').html('');
+                console.log('Vẽ chart 12');
+            };
+
+            function notavailableChart() {
+                d3.select('#chart').html('');
+                d3.select('svg').remove();
+                console.log('Chưa có chart nha ní');
+            }
+        });
+    </script>
+</body>
+</html>
