@@ -3,10 +3,27 @@ let drawChart1, drawChart2, drawChart3, drawChart4, drawChart5, drawChart6, draw
 
 const selector = d3.select("#chartSelector");
 const chartDiv = d3.select("#chart");
+const bigchartDiv = d3.select("#bigchart");
+
+const tableauClassic20 = [
+  "#4E79A7", "#A0CBE8", // Xanh dương
+  "#F28E2B", "#FFBE7D", // Cam
+  "#59A14F", "#8CD17D", // Xanh lá
+  "#B6992D", "#F1CE63", // Vàng
+  "#499894", "#86BCB6", // Xanh nước biển
+  "#E15759", "#FF9D9A", // Đỏ
+  "#79706E", "#BAB0AC", // Xám
+  "#D37295", "#FFB7D5", // Hồng
+  "#B07AA1", "#D4A6C8", // Tím
+  "#9D7660", "#D7B5A6"  // Nâu
+];
 
 // Hàm xóa biểu đồ
 function clearChart() {
   chartDiv.select("svg").remove();
+  bigchartDiv.selectAll("svg").remove();
+  bigchartDiv.selectAll("h3").remove();
+  bigchartDiv.attr("style", null);
 }
 
 function formatVND(value) {
@@ -18,6 +35,7 @@ function formatVND(value) {
 
 // Đọc dữ liệu từ file CSV
 d3.csv("data.csv", function (d) {
+  d["Mặt hàng"] = `[${d["Mã mặt hàng"]}] ${d["Tên mặt hàng"]}`;
   d["Nhóm hàng"] = `[${d["Mã nhóm hàng"]}] ${d["Tên nhóm hàng"]}`;
   d["Tháng"] = `Tháng ${d3.timeFormat("%m")(new Date(d["Thời gian tạo đơn"]))}`;
   return d;
@@ -41,7 +59,7 @@ d3.csv("data.csv", function (d) {
       group,
     })).sort((a, b) => d3.descending(a.revenue, b.revenue));
 
-    drawBarChart(dataset, "Q1");
+    Ve_Chart_Ngang(dataset, "Q1");
   }
 
   // Hàm vẽ biểu đồ doanh số theo nhóm hàng
@@ -60,7 +78,7 @@ d3.csv("data.csv", function (d) {
       group,
     })).sort((a, b) => d3.descending(a.revenue, b.revenue));
 
-    drawBarChart(dataset, "Q2");
+    Ve_Chart_Ngang(dataset, "Q2");
   }
 
   // Hàm vẽ biểu đồ doanh số theo tháng
@@ -79,7 +97,7 @@ d3.csv("data.csv", function (d) {
       group: "Tháng",
     })).sort((a, b) => d3.ascending(a.item, b.item));
 
-    drawBarChartHorizontal(dataset, "Q3");
+    Ve_Chart_Doc(dataset, "Q3");
   }
 
   drawChart4 = function() {
@@ -142,7 +160,7 @@ d3.csv("data.csv", function (d) {
     console.log("Dataset:", dataset);
 
     // Vẽ biểu đồ ngang
-    drawBarChartHorizontal(dataset, "Q4");
+    Ve_Chart_Doc(dataset, "Q4");
   }
   
   drawChart5 = function() {
@@ -183,7 +201,7 @@ d3.csv("data.csv", function (d) {
     })).sort((a, b) => a.item.localeCompare(b.item, undefined, { numeric: true }));
 
     // Vẽ biểu đồ ngang
-    drawBarChartHorizontal(dataset, "Q5");
+    Ve_Chart_Doc(dataset, "Q5");
     } 
 
   drawChart6 = function() {
@@ -237,7 +255,7 @@ d3.csv("data.csv", function (d) {
     console.log("Dataset (Khung giờ):", dataset);
 
     // Vẽ biểu đồ ngang
-    drawBarChartHorizontal(dataset, "Q6");
+    Ve_Chart_Doc(dataset, "Q6");
   }
 
   drawChart7 = function() {
@@ -270,7 +288,7 @@ d3.csv("data.csv", function (d) {
     console.log("Dataset (Xác suất bán hàng theo nhóm hàng):", dataset);
 
     // Vẽ biểu đồ ngang
-    drawBarChart(dataset, "Q7");
+    Ve_Chart_Ngang(dataset, "Q7");
   }
 
   drawChart8 = function() {
@@ -309,15 +327,141 @@ d3.csv("data.csv", function (d) {
       };
     });
 
-    // Kiểm tra dữ liệu đầu ra
-    console.log("Dataset (Xác suất & Số lượng đơn theo nhóm hàng và tháng):", dataset);
-
     // Vẽ biểu đồ đường
     drawLineChart(dataset, "Q8");
-};
+  }
+
+  drawChart9 = function() {
+    clearChart();
+
+    // Tổng số đơn hàng theo từng Nhóm hàng
+    const totalOrdersByGroup = d3.rollup(
+      data,
+      (v) => new Set(v.map(d => d["Mã đơn hàng"])).size,
+      (d) => d["Nhóm hàng"]
+    );
+
+    // Tính xác suất bán hàng theo Mặt hàng trong mỗi Nhóm hàng
+    const probabilityByItem = d3.rollup(
+      data,
+      (v) => {
+        const group = v[0]["Nhóm hàng"];
+        const uniqueOrders = new Set(v.map(d => d["Mã đơn hàng"])).size;
+
+        // Xác suất bán hàng = Số lượng đơn hàng duy nhất / Tổng số đơn hàng trong Nhóm hàng
+        return uniqueOrders / totalOrdersByGroup.get(group);
+      },
+      (d) => d["Nhóm hàng"],
+      (d) => d["Mặt hàng"]
+    );
+
+    // Tạo dataset: mỗi phần tử là một nhóm hàng với các mặt hàng con
+    const dataset = Array.from(probabilityByItem, ([group, items]) => {
+      return {
+        group: group,
+        items: Array.from(items, ([item, probability]) => ({
+          item: item,
+          revenue: probability,
+          revenueFormatted: (probability * 100).toFixed(1) + "%",
+          group: group
+        })).sort((a, b) => d3.descending(a.revenue, b.revenue))
+      };
+    });
+
+    d3.select("#bigchart")
+      .style("width", "1800px")
+      .style("height", "900px")
+      .style("display", "grid")
+      .style("grid-template-columns", "repeat(3, 1fr)")
+      .style("grid-template-rows", "repeat(2, 1fr)")
+      .style("gap", "10px");
+
+    // Lấy 5 nhóm lớn nhất
+    const topGroups = d3.groups(data, d => d["Nhóm hàng"])
+                        .sort((a, b) => d3.descending(d3.sum(a[1], d => d.revenue), d3.sum(a[1], d => d.revenue)))
+                        .slice(0, 5);
+
+    // ✅ Bước 1: Tạo danh sách tất cả các Mặt hàng duy nhất từ toàn bộ dataset
+    const allItems = Array.from(new Set(dataset.flatMap(d => d.items.map(item => item.item))));
+
+    const colorScale = d3.scaleOrdinal(tableauClassic20).domain(allItems);
+
+    topGroups.forEach((groupData, index) => {
+      const containerId = `chart9-container-${index}`;
+      // Tạo phần tử chứa biểu đồ + tiêu đề
+      const chartContainer = d3.select("#bigchart")
+        .append("div")
+        .attr("id", containerId)
+        .style("border", "1px solid #ccc")
+        .style("box-shadow", "0 4px 8px rgba(0, 0, 0, 0.1)")
+        .style("border-radius", "8px")
+        .style("padding", "10px");
+
+      // Lấy dữ liệu Mặt hàng theo từng Nhóm hàng
+      const chartData = dataset.find(d => d.group === groupData[0]).items;
+
+      // Gọi Ve_Chart với colorScale dùng chung
+      Ve_Chart(chartData, "Q9", containerId, colorScale);
+    });
+  }
+
+  drawChart11 = function() {
+    clearChart();
+
+    // Tính số lần mua của mỗi khách hàng
+    const purchasesByCustomer = d3.rollup(
+      data,
+      (v) => new Set(v.map(d => d["Mã đơn hàng"])).size,
+      (d) => d["Mã khách hàng"]
+    );
+
+    // Tính số lượng khách hàng theo số lần mua
+    const purchaseFrequency = d3.rollup(
+      Array.from(purchasesByCustomer.values()),
+      (v) => v.length,
+      (count) => count
+    );
+
+    const dataset = Array.from(purchaseFrequency, ([purchases, customers]) => ({
+      item: purchases,
+      customers,
+      group: "Số lần mua"
+    })).sort((a, b) => d3.ascending(a.item, b.item));
+
+    VeChart_11_12(dataset, "Q11");
+  }
+
+  drawChart12 = function() {
+    clearChart();
+
+    // Tính tổng Thành tiền của mỗi khách hàng
+    const spendingByCustomer = d3.rollup(
+      data,
+      (v) => d3.sum(v, (d) => d["Thành tiền"]),
+      (d) => d["Mã khách hàng"]
+    );
+
+    // Xác định bin (khoảng mức chi trả cách nhau 50,000)
+    const binSize = 50000;
+    const binnedData = d3.rollup(
+      Array.from(spendingByCustomer.values()),
+      (v) => v.length,
+      (amount) => Math.floor(amount / binSize) * binSize
+    );
+
+    // Tạo dataset từ binnedData
+    const dataset = Array.from(binnedData, ([spending, customers]) => ({
+      item: spending, // Mức chi trả (theo bin)
+      customers: customers,
+      group: "Mức chi trả"
+    })).sort((a, b) => d3.ascending(a.item, b.item));
+
+    // Vẽ biểu đồ
+    VeChart_11_12(dataset, "Q12");
+  };
 
   // Hàm vẽ biểu đồ cột chung
-  function drawBarChart(dataset, chartType) {
+  function Ve_Chart_Ngang(dataset, chartType) {
     const tableauClassic10 = [
       "#4E79A7", // Xanh dương
       "#F28E2B", // Cam
@@ -334,8 +478,6 @@ d3.csv("data.csv", function (d) {
     const width = 1000;
     const height = 600;
 
-    const makeXGridlines = () => d3.axisBottom(x).ticks(10);
-
     const svg = chartDiv
       .append("svg")
       .attr("width", width + margin.left + margin.right)
@@ -349,7 +491,7 @@ d3.csv("data.csv", function (d) {
       .padding(0.2);
 
     const x = d3.scaleLinear()
-      .domain([0, d3.max(dataset, (d) => d.revenue) * 1.15])  // Tăng giới hạn 10%
+      .domain([0, d3.max(dataset, (d) => d.revenue) * 1.15])
       .range([0, width - 200]);
 
     const colorScale = d3.scaleOrdinal()
@@ -379,17 +521,18 @@ d3.csv("data.csv", function (d) {
       }))
 
 
-    // Vẽ gridlines dọc (trục Y)
-    svg.append("g")
-    .attr("class", "grid")
-    .attr("transform", `translate(0, ${height})`)
-    .call(makeXGridlines()
-        .tickSize(-height)  // Độ dài của đường lưới
-        .tickFormat("")     // Ẩn nhãn trên gridlines
-    );
-    svg.selectAll(".grid line")
-    .style("stroke", "#aaa")  // Màu của đường lưới
-    .style("opacity", 0.2); // 20% độ đậm
+    // Vẽ gridlines dọc (trục X - scaleLinear hoặc scaleBand)
+    svg.selectAll("line.vertical-grid")
+      .data(x.ticks())        // Tạo các vạch lưới theo trục X
+      .enter()
+      .append("line")
+      .attr("class", "vertical-grid")
+      .attr("x1", (d) => x(d)) // Bắt đầu từ từng giá trị của trục X
+      .attr("y1", 0)           // Bắt đầu từ đỉnh (top)
+      .attr("x2", (d) => x(d)) // Kết thúc cùng vị trí theo trục X
+      .attr("y2", height)      // Kéo xuống đáy (bottom)
+      .style("stroke", "gray") // Màu lưới
+      .style("opacity", 0.2); // Độ mờ
     
 
     svg.selectAll(".bar")
@@ -443,7 +586,7 @@ d3.csv("data.csv", function (d) {
   }
 
 
-  function drawBarChartHorizontal(dataset, chartType) {
+  function Ve_Chart_Doc(dataset, chartType) {
     clearChart();
     const tableauClassic10 = [
       "#4E79A7", // Xanh dương
@@ -525,6 +668,18 @@ d3.csv("data.csv", function (d) {
       .selectAll("text")
       .attr("transform", chartType === "Q5" ? "rotate(-45)" : "rotate(0)")
       .style("text-anchor", chartType === "Q5" ? "end" : "middle");
+
+    svg.selectAll("line.horizontal-grid")
+      .data(y.ticks())  // Tạo 10 vạch lưới (có thể chỉnh số lượng)
+      .enter()
+      .append("line")
+      .attr("class", "horizontal-grid")
+      .attr("x1", 0)            // Bắt đầu từ cạnh trái
+      .attr("y1", (d) => y(d))  // Vị trí dọc theo trục Y
+      .attr("x2", width)        // Kết thúc ở cạnh phải
+      .attr("y2", (d) => y(d))  // Cùng tọa độ Y
+      .style("stroke", "gray")  // Màu lưới
+      .style("opacity", 0.2);  // Độ mờ
 
     svg.selectAll(".bar")
       .data(dataset)
@@ -694,6 +849,195 @@ d3.csv("data.csv", function (d) {
       .on("mouseout", () => tooltip.style("visibility", "hidden"));
   }
 
+  function Ve_Chart(dataset, chartType, containerId, colorScale) {
+    // Xóa nội dung container cụ thể (tránh bị chồng chéo khi vẽ lại)
+    d3.select(`#${containerId}`).html("");
+
+    const margin = { top: 40, right: 1, bottom: 50, left: 200 },
+          width = 360
+          height = 300
+        
+    // Tạo SVG cho mỗi chart
+    const svg = d3.select(`#${containerId}`)
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // Tạo thang đo Y (Mặt hàng)
+    const y = d3.scaleBand()
+      .domain(dataset.map(d => d.item))
+      .range([0, height])
+      .padding(0.3);
+
+    // Tạo thang đo X (Xác suất bán hàng)
+    const x = d3.scaleLinear()
+      .domain([0, d3.max(dataset, d => d.revenue)])
+      .range([0, width-70]);
+
+    // Tooltip
+    const tooltip = d3.select("body").append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("background", "#fff")
+      .style("border", "1px solid #ddd")
+      .style("padding", "5px")
+      .style("border-radius", "5px")
+      .style("opacity", 0);
+
+    svg.selectAll(".bar")
+      .data(dataset)
+      .enter()
+      .append("rect")
+      .attr("class", "bar")
+      .attr("y", d => y(d.item))
+      .attr("x", 0)
+      .attr("height", y.bandwidth())
+      .attr("width", d => x(d.revenue))
+      .attr("fill", d => colorScale(d.item))
+      .on("mouseover", (event, d) => {
+        tooltip.style("opacity", 1)
+          .html(`Mặt hàng: ${d.item}<br>Nhóm hàng: ${dataset[0].group}<br>Xác suất Bán / Nhóm hàng: ${d.revenueFormatted}`);
+      })
+      .on("mousemove", (event) => {
+        tooltip.style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY - 20) + "px");
+      })
+      .on("mouseout", () => tooltip.style("opacity", 0));
+
+    // Vẽ trục Y (Mặt hàng)
+    svg.append("g")
+      .attr("class", "y-axis")
+      .call(d3.axisLeft(y));
+
+    // Vẽ trục X (Xác suất, dạng phần trăm)
+    svg.append("g")
+      .attr("transform", `translate(0, ${height})`)
+      .call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(".0%")));
+
+    // Thêm tiêu đề cho biểu đồ
+    svg.append("text")
+    .attr("x", width / 4)              // Căn giữa theo chiều ngang
+    .attr("y", -20)                    // Đẩy lên phía trên
+    .attr("text-anchor", "middle")     // Căn giữa văn bản
+    .style("font-size", "18px")
+    .style("font-weight", "bold")
+    .style("fill", "#4E79A7")
+    .text(`${dataset[0].group}`);
+  } 
+
+
+  function VeChart_11_12(dataset, chartType) {
+    const tableauClassic10 = [
+      "#4E79A7", // Xanh dương
+      "#F28E2B", // Cam
+      "#E15759", // Đỏ
+      "#76B7B2", // Xanh nước biển
+      "#59A14F", // Xanh lá
+      "#EDC948", // Vàng
+      "#B07AA1", // Tím
+      "#FF9DA7", // Hồng
+      "#9C755F", // Nâu
+      "#BAB0AC", // Xám
+    ];
+
+    const margin = { top: 20, right: 40, bottom: chartType === "Q12" ? 80 : 40, left: 50 };
+    const width = 1200;
+    const height = 600;
+
+    const svg = d3.select("#chart")
+      .append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+    const x = d3.scaleBand()
+      .domain(dataset.map((d) => d.item))
+      .range([0, width])
+      .padding(0.2);
+
+    const y = d3.scaleLinear()
+      .domain([0, d3.max(dataset, (d) => d.customers) * 1.15])
+      .range([height, 0]);
+
+    const colorScale = d3.scaleOrdinal()
+      .domain(new Set(dataset.map(d => d.group)))
+      .range(tableauClassic10);
+
+    // Vẽ trục Y
+    svg.append("g")
+      .call(d3.axisLeft(y).tickFormat((d) => d))
+      .attr("class", "axis-label");
+
+    // Vẽ trục X
+    const xAxis = svg.append("g")
+      .attr("transform", `translate(0, ${height})`)
+      .call(d3.axisBottom(x).tickSize(0).tickPadding(10));
+
+    if (chartType === "Q12") {
+      xAxis.selectAll("text")
+        .style("text-anchor", "end")
+        .attr("transform", "rotate(-90) translate(-2,-12)")
+        .text(d => `${(d+50000) / 1000}K`); // Hiển thị dạng 50K, 100K...
+    }
+
+    // Vẽ gridlines ngang (trục Y - scaleLinear)
+    svg.selectAll("line.horizontal-grid")
+      .data(y.ticks())
+      .enter()
+      .append("line")
+      .attr("class", "horizontal-grid")
+      .attr("x1", 0)
+      .attr("y1", (d) => y(d))
+      .attr("x2", width)
+      .attr("y2", (d) => y(d))
+      .style("stroke", "gray")
+      .style("opacity", 0.2);
+
+    // Tạo phần tử tooltip (ẩn mặc định)
+    const tooltip = d3.select("#chart")
+      .append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("background", "#fff")
+      .style("border", "1px solid #ccc")
+      .style("border-radius", "8px")
+      .style("padding", "8px")
+      .style("box-shadow", "0 2px 6px rgba(0,0,0,0.2)")
+      .style("opacity", 0);
+
+    // Vẽ các thanh dọc
+    svg.selectAll(".bar")
+      .data(dataset)
+      .enter()
+      .append("rect")
+      .attr("class", "bar")
+      .attr("x", (d) => x(d.item) - (x.bandwidth() * 0.14))  // Điều chỉnh để căn giữa khi to hơn
+      .attr("y", (d) => y(d.customers))
+      .attr("width", x.bandwidth() * 1.16) // Tăng kích thước thanh
+      .attr("height", (d) => height - y(d.customers))
+      .attr("fill", (d) => colorScale(d.group))
+      .on("mouseover", (event, d) => {
+        const tooltipContent = chartType === "Q11"
+          ? `Đã mua ${d.item} lần<br>Số lượng KH: ${d.customers.toLocaleString()}`
+          : `Đã chi tiêu từ ${d.item.toLocaleString()}K đến ${(d.item + 50000).toLocaleString()}K<br>
+             Số lượng KH: ${d.customers.toLocaleString()}`;
+      
+        tooltip.style("opacity", 1).html(tooltipContent);
+      })
+      .on("mousemove", (event) => {
+        tooltip
+          .style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY - 20) + "px");
+      })
+      .on("mouseout", () => {
+        tooltip.style("opacity", 0);
+      });
+  }
+
+
 
   selector.on("change", function () {
     const value = d3.select(this).property("value");
@@ -713,3 +1057,5 @@ d3.csv("data.csv", function (d) {
 
   drawChart1();
 });
+
+  

@@ -5,6 +5,7 @@ body {
   background: linear-gradient(to right, #4e54c8, #8f94fb);
 }
 .chart {
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
