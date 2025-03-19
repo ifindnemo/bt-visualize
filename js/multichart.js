@@ -1,4 +1,3 @@
-// multichart.js
 let drawChart1, drawChart2, drawChart3, drawChart4, drawChart5, drawChart6, drawChart7, drawChart8, drawChart9, drawChart10, drawChart11, drawChart12;
 
 const tableauClassic10 = [
@@ -44,7 +43,6 @@ const selector = d3.select("#chartSelector");
 const chartDiv = d3.select("#chart");
 const bigchartDiv = d3.select("#bigchart");
 
-// Hàm xóa biểu đồ
 function clearChart() {
   chartDiv.select("svg").remove();
   bigchartDiv.selectAll("svg").remove();
@@ -58,10 +56,9 @@ function formatVND(value) {
   if (value >= 1_000_000) {
     return (value / 1_000_000).toFixed(1).replace(".", ",") + " tr";
   }
-  return value.toLocaleString("vi-VN"); // Định dạng số bình thường
+  return value.toLocaleString("vi-VN");
 }
 
-// Đọc dữ liệu từ file CSV
 d3.csv("data.csv", function (d) {
   d["Mặt hàng"] = `[${d["Mã mặt hàng"]}] ${d["Tên mặt hàng"]}`;
   d["Nhóm hàng"] = `[${d["Mã nhóm hàng"]}] ${d["Tên nhóm hàng"]}`;
@@ -69,7 +66,7 @@ d3.csv("data.csv", function (d) {
   d["ThángQ10"] = `T${d3.timeFormat("%m")(new Date(d["Thời gian tạo đơn"]))}`;
   return d;
 }).then(function (data) {
-  // Hàm vẽ biểu đồ doanh số theo sản phẩm
+  // Q1: Doanh số bán hàng theo Mặt hàng
   drawChart1 = function() {
     clearChart();
 
@@ -93,7 +90,7 @@ d3.csv("data.csv", function (d) {
     Ve_Chart_Ngang(dataset, "Q1");
   }
 
-  // Hàm vẽ biểu đồ doanh số theo nhóm hàng
+  // Q2: Doanh số bán hàng theo Nhóm hàng
   drawChart2 = function() {
     clearChart();
 
@@ -116,7 +113,7 @@ d3.csv("data.csv", function (d) {
     Ve_Chart_Ngang(dataset, "Q2");
   }
 
-  // Hàm vẽ biểu đồ doanh số theo tháng
+  // Q3: Doanh số bán hàng theo Tháng
   drawChart3 = function() {
     clearChart();
   
@@ -139,10 +136,10 @@ d3.csv("data.csv", function (d) {
     Ve_Chart_Doc(dataset, "Q3");
   }
 
+  // Q4: Doanh số bán hàng trung bình theo Ngày trong tuần
   drawChart4 = function() {
     clearChart();
 
-    // Tạo hàm định dạng ngày trong tuần (Saturday, Sunday, ...)
     const formatDayOfWeek = d3.timeFormat("%A");
 
     const dayMapping = {
@@ -155,19 +152,16 @@ d3.csv("data.csv", function (d) {
         "Sunday": "Chủ nhật"
     };
 
-    // Chuẩn hóa thời gian thành "YYYY-MM-DD" để tính ngày duy nhất
     const parseDate = (dateString) => {
         const date = new Date(dateString);
-        return date.toISOString().split("T")[0]; // Trả về định dạng "YYYY-MM-DD"
+        return date.toISOString().split("T")[0];
     };
 
-    // Nhóm dữ liệu theo ngày trong tuần
     const revenueByDayOfWeek = d3.rollup(
         data,
         (v) => {
             const totalRevenue = d3.sum(v, (d) => +d["Thành tiền"]);
 
-            // Lấy số ngày duy nhất trong nhóm (theo "YYYY-MM-DD")
             const uniqueDays = new Set(v.map(d => parseDate(d["Thời gian tạo đơn"]))).size;
 
             return uniqueDays > 0 ? totalRevenue / uniqueDays : 0;
@@ -185,7 +179,6 @@ d3.csv("data.csv", function (d) {
         "Chủ nhật": 7
     };
 
-    // Chuyển đổi thành mảng và sắp xếp theo thứ tự ngày trong tuần
     const dataset = Array.from(revenueByDayOfWeek, ([day, avgRevenue]) => ({
         item: day,
         revenue: avgRevenue,
@@ -195,31 +188,28 @@ d3.csv("data.csv", function (d) {
     Ve_Chart_Doc(dataset, "Q4");
   }
   
+  // Q5: Doanh số bán hàng trung bình theo Ngày trong tháng
   drawChart5 = function() {
     clearChart();
 
     // Hàm lấy ngày trong tháng (01, 02, ..., 31)
     const getDayOfMonth = (dateString) => {
         const date = new Date(dateString);
-        return `Ngày ${String(date.getDate()).padStart(2, '0')}`; // Định dạng "Ngày 01", "Ngày 02", ...
+        return `Ngày ${String(date.getDate()).padStart(2, '0')}`;
     };
 
-    // Chuẩn hóa thời gian thành "YYYY-MM-DD" để tính ngày duy nhất
     const parseDate = (dateString) => {
         const date = new Date(dateString);
-        return date.toISOString().split("T")[0]; // Trả về định dạng "YYYY-MM-DD"
+        return date.toISOString().split("T")[0];
     };
 
-    // Nhóm dữ liệu theo ngày trong tháng
     const revenueByDayOfMonth = d3.rollup(
         data,
         (v) => {
             const totalRevenue = d3.sum(v, (d) => +d["Thành tiền"]);
 
-            // Tính tổng số lượng bán theo cột "SL"
             const orderCount = d3.sum(v, (d) => +d["SL"]);
 
-            // Lấy số ngày duy nhất trong nhóm (theo "YYYY-MM-DD")
             const uniqueDays = new Set(v.map(d => parseDate(d["Thời gian tạo đơn"]))).size;
 
             return {
@@ -230,22 +220,20 @@ d3.csv("data.csv", function (d) {
         (d) => getDayOfMonth(d["Thời gian tạo đơn"])
     );
 
-    // Chuyển đổi thành mảng và sắp xếp theo thứ tự ngày trong tháng
     const dataset = Array.from(revenueByDayOfMonth, ([day, { avgRevenue, orderCount }]) => ({
-        item: day,            // Ngày trong tháng (e.g., "Ngày 01")
-        revenue: avgRevenue,  // Doanh thu trung bình
-        orderCount: orderCount, // Tổng số lượng bán
+        item: day,
+        revenue: avgRevenue,
+        orderCount: orderCount,
         group: "Ngày trong tháng",
     })).sort((a, b) => a.item.localeCompare(b.item, undefined, { numeric: true }));
 
-    // Vẽ biểu đồ dọc
     Ve_Chart_Doc(dataset, "Q5");
   }
 
+  // Q6: Doanh số bán hàng trung bình theo Khung giờ
   drawChart6 = function() {
     clearChart();
 
-    // Hàm xác định khung giờ (ví dụ: "08:00-08:59")
     const getTimeRange = (dateString) => {
         const date = new Date(dateString);
         const hour = date.getHours();
@@ -254,22 +242,18 @@ d3.csv("data.csv", function (d) {
         return `${startHour}:00-${endHour}:00`;
     };
 
-    // Chuẩn hóa thời gian thành "YYYY-MM-DD" để tính ngày duy nhất
     const parseDate = (dateString) => {
         const date = new Date(dateString);
-        return date.toISOString().split("T")[0]; // Trả về định dạng "YYYY-MM-DD"
+        return date.toISOString().split("T")[0];
     };
 
-    // Nhóm dữ liệu theo khung giờ
     const revenueByTimeRange = d3.rollup(
         data,
         (v) => {
             const totalRevenue = d3.sum(v, (d) => +d["Thành tiền"]);
 
-            // Tính tổng số lượng bán theo cột "SL"
             const orderCount = d3.sum(v, (d) => +d["SL"]);
 
-            // Lấy số ngày duy nhất trong nhóm (theo "YYYY-MM-DD")
             const uniqueDays = new Set(v.map(d => parseDate(d["Thời gian tạo đơn"]))).size;
 
             return {
@@ -280,20 +264,18 @@ d3.csv("data.csv", function (d) {
         (d) => getTimeRange(d["Thời gian tạo đơn"])
     );
 
-    // Tạo danh sách khung giờ từ 08:00-08:59 đến 23:00-23:59
     const timeRanges = Array.from({ length: 16 }, (_, i) => {
-        const startHour = String(i + 8).padStart(2, '0'); // Bắt đầu từ 08:00
+        const startHour = String(i + 8).padStart(2, '0');
         const endHour = String(i + 9).padStart(2, '0');
         return `${startHour}:00-${endHour}:00`;
     });
 
-    // Tạo dataset và đảm bảo đầy đủ các khung giờ (nếu thiếu thì doanh số và số lượng = 0)
     const dataset = timeRanges.map((timeRange) => {
         const stats = revenueByTimeRange.get(timeRange) || { avgRevenue: 0, orderCount: 0 };
         return {
-            item: timeRange,            // Khung giờ (e.g., "08:00-08:59")
-            revenue: stats.avgRevenue,  // Doanh thu trung bình
-            orderCount: stats.orderCount, // Tổng số lượng bán
+            item: timeRange, 
+            revenue: stats.avgRevenue,
+            orderCount: stats.orderCount,
             group: "Khung giờ",
         };
     });
@@ -301,7 +283,7 @@ d3.csv("data.csv", function (d) {
     Ve_Chart_Doc(dataset, "Q6");
   }
 
-
+  // Q7: Xác suất bán hàng theo Nhóm hàng
   drawChart7 = function() {
     clearChart();
     
@@ -331,69 +313,63 @@ d3.csv("data.csv", function (d) {
     Ve_Chart_Ngang(dataset, "Q7");
   }
 
+  // Q8: Xác suất bán hàng theo Nhóm hàng theo Tháng
   drawChart8 = function() {
     clearChart();
-    // Tổng số đơn hàng (unique Mã đơn hàng) theo tháng
     const totalOrdersByMonth = d3.rollup(
       data,
       (v) => new Set(v.map((d) => d["Mã đơn hàng"])).size,
       (d) => d["Tháng"]
     );
 
-    // Tính xác suất bán hàng và số lượng đơn bán theo nhóm hàng và tháng
     const probabilityByGroupAndMonth = d3.rollup(
       data,
       (v) => {
-        const uniqueOrders = new Set(v.map((d) => d["Mã đơn hàng"])).size; // Số lượng đơn duy nhất
+        const uniqueOrders = new Set(v.map((d) => d["Mã đơn hàng"])).size;
         const month = v[0]["Tháng"];
         const probability = uniqueOrders / totalOrdersByMonth.get(month);
-        return { probability, orderCount: uniqueOrders }; // Trả về cả xác suất và số lượng đơn
+        return { probability, orderCount: uniqueOrders };
       },
       (d) => d["Nhóm hàng"],
       (d) => d["Tháng"]
     );
 
-    // Chuyển đổi thành mảng
     const dataset = Array.from(probabilityByGroupAndMonth, ([group, months]) => {
       return {
         group,
         values: Array.from(months, ([month, { probability, orderCount }]) => ({
           month,
           probability,
-          probabilityFormatted: (probability * 100).toFixed(1) + "%", // Xác suất dạng %
-          orderCount, // Thêm số lượng đơn bán
+          probabilityFormatted: (probability * 100).toFixed(1) + "%",
+          orderCount,
         })).sort((a, b) => d3.ascending(a.month, b.month)),
       };
     });
 
-    drawLineChart(dataset, "Q8");
+    Ve_chart_Q8(dataset, "Q8");
   }
 
+  // Q9: Xác suất bán hàng của Mặt hàng theo Nhóm hàng
   drawChart9 = function() {
     clearChart();
-
-    // Tổng số đơn hàng theo từng Nhóm hàng
     const totalOrdersByGroup = d3.rollup(
       data,
       (v) => new Set(v.map(d => d["Mã đơn hàng"])).size,
       (d) => d["Nhóm hàng"]
     );
 
-    // Tính xác suất bán hàng theo Mặt hàng trong mỗi Nhóm hàng
     const probabilityByItem = d3.rollup(
       data,
       (v) => {
         const group = v[0]["Nhóm hàng"];
         const uniqueOrders = new Set(v.map(d => d["Mã đơn hàng"])).size;
 
-        // Xác suất bán hàng = Số lượng đơn hàng duy nhất / Tổng số đơn hàng trong Nhóm hàng
         return uniqueOrders / totalOrdersByGroup.get(group);
       },
       (d) => d["Nhóm hàng"],
       (d) => d["Mặt hàng"]
     );
 
-    // Tạo dataset: mỗi phần tử là một nhóm hàng với các mặt hàng con
     const dataset = Array.from(probabilityByItem, ([group, items]) => {
       return {
         group: group,
@@ -414,19 +390,17 @@ d3.csv("data.csv", function (d) {
       .style("grid-template-rows", "repeat(2, 1fr)")
       .style("gap", "10px");
 
-    // Lấy 5 nhóm lớn nhất
     const topGroups = d3.groups(data, d => d["Nhóm hàng"])
                         .sort((a, b) => d3.descending(d3.sum(a[1], d => d.revenue), d3.sum(a[1], d => d.revenue)))
                         .slice(0, 5);
 
-    // ✅ Bước 1: Tạo danh sách tất cả các Mặt hàng duy nhất từ toàn bộ dataset
     allItems = Array.from(new Set(dataset.flatMap(d => d.items.map(item => item.item))));
 
     colorScale = d3.scaleOrdinal(tableauClassic20).domain(allItems);
 
     topGroups.forEach((groupData, index) => {
       const containerId = `chart9-container-${index}`;
-      // Tạo phần tử chứa biểu đồ + tiêu đề
+
       const chartContainer = d3.select("#bigchart")
         .append("div")
         .attr("id", containerId)
@@ -435,18 +409,15 @@ d3.csv("data.csv", function (d) {
         .style("border-radius", "8px")
         .style("padding", "10px");
 
-      // Lấy dữ liệu Mặt hàng theo từng Nhóm hàng
       const chartData = dataset.find(d => d.group === groupData[0]).items;
 
       Ve_Chart_Q9(chartData, "Q9", containerId, colorScale);
     });
   }
 
+  // Q10: Xác suất bán hàng của Mặt hàng theo Nhóm hàng theo Tháng
   drawChart10 = function() {
     clearChart();
-  
-    // Tổng số đơn hàng (unique Mã đơn hàng) theo tháng
-    // Bước 1: Tính tổng số đơn hàng theo nhóm hàng và tháng
     const totalOrdersByGroupMonth = d3.rollup(
       data,
       (v) => new Set(v.map((d) => d["Mã đơn hàng"])).size,
@@ -454,14 +425,13 @@ d3.csv("data.csv", function (d) {
       (d) => d["ThángQ10"]
     );
   
-    // Tính xác suất bán hàng và số lượng đơn theo nhóm hàng và tháng
     const XacSuatTheoMHNH_Thang = d3.rollup(
       data,
       (v) => {
         const uniqueOrders = new Set(v.map((d) => d["Mã đơn hàng"])).size;
         const month = v[0]["ThángQ10"];
         const group = v[0]["Nhóm hàng"];
-        // Lấy tổng số đơn theo nhóm hàng và tháng, mặc định là 1
+
         const totalOrders = totalOrdersByGroupMonth.get(group).get(month) || 1;
         const probability = uniqueOrders / totalOrders;
         return { probability, orderCount: uniqueOrders };
@@ -479,13 +449,11 @@ d3.csv("data.csv", function (d) {
       .style("grid-template-rows", "repeat(2, 1fr)")
       .style("gap", "10px");
   
-    // Lấy 5 nhóm lớn nhất theo tổng doanh thu
     const topGroups = d3.groups(data, (d) => d["Nhóm hàng"])
       .sort((a, b) => d3.descending(d3.sum(a[1], (d) => d.revenue), d3.sum(b[1], (d) => d.revenue)))
       .slice(0, 5)
       .map((d) => d[0]);
     
-    // Chuyển đổi thành mảng dataset
     const dataset = Array.from(XacSuatTheoMHNH_Thang, ([group, items]) => {
       return {
         group,
@@ -506,11 +474,9 @@ d3.csv("data.csv", function (d) {
 
     colorScale = d3.scaleOrdinal(tableauClassic20).domain(allItems);
     
-    // Duyệt qua từng nhóm hàng (5 nhóm lớn nhất) và vẽ biểu đồ
     topGroups.forEach((groupData, index) => {
       const containerId = `chart10-container-${index}`;
 
-      // Tạo phần tử chứa biểu đồ + tiêu đề
       const chartContainer = d3.select("#bigchart")
         .append("div")
         .attr("id", containerId)
@@ -521,22 +487,20 @@ d3.csv("data.csv", function (d) {
 
       const chartData = dataset.find(d => d.group === groupData).items;
 
-      // Vẽ biểu đồ cho từng nhóm
       Ve_Chart_Q10(chartData, "Q10", containerId, colorScale, groupData);
     });
   };
 
+  // Q11: Phân phối Lượt mua hàng
   drawChart11 = function() {
     clearChart();
 
-    // Tính số lần mua của mỗi khách hàng
     const purchasesByCustomer = d3.rollup(
       data,
       (v) => new Set(v.map(d => d["Mã đơn hàng"])).size,
       (d) => d["Mã khách hàng"]
     );
 
-    // Tính số lượng khách hàng theo số lần mua
     const purchaseFrequency = d3.rollup(
       Array.from(purchasesByCustomer.values()),
       (v) => v.length,
@@ -552,17 +516,16 @@ d3.csv("data.csv", function (d) {
     VeChart_11_12(dataset, "Q11");
   }
 
+  // Q12: Phân phối Mức chi trả của Khách hàng
   drawChart12 = function() {
     clearChart();
 
-    // Tính tổng Thành tiền của mỗi khách hàng
     const spendingByCustomer = d3.rollup(
       data,
       (v) => d3.sum(v, (d) => d["Thành tiền"]),
       (d) => d["Mã khách hàng"]
     );
 
-    // Xác định bin (khoảng mức chi trả cách nhau 50,000)
     const binSize = 50000;
     const binnedData = d3.rollup(
       Array.from(spendingByCustomer.values()),
@@ -570,9 +533,8 @@ d3.csv("data.csv", function (d) {
       (amount) => Math.floor(amount / binSize) * binSize
     );
 
-    // Tạo dataset từ binnedData
     const dataset = Array.from(binnedData, ([spending, customers]) => ({
-      item: spending, // Mức chi trả (theo bin)
+      item: spending,
       customers: customers,
       group: "Mức chi trả"
     })).sort((a, b) => d3.ascending(a.item, b.item));
@@ -581,7 +543,7 @@ d3.csv("data.csv", function (d) {
   };
 
   //================================================================================================
-  // Hàm vẽ biểu đồ cột chung
+  // Hàm vẽ biểu đồ ngang cho Q1, Q2, Q7
   function Ve_Chart_Ngang(dataset, chartType) {
     const margin = { top: 20, right: 40, bottom: 40, left: 220 };
     const width = 1000;
@@ -605,14 +567,13 @@ d3.csv("data.csv", function (d) {
 
     const colorScale = d3.scaleOrdinal()
       .domain(chartType === "Q1" || chartType === "Q2"
-        ? Array.from(new Set(dataset.map((d) => d.group))).sort(d3.ascending) // Q1: Sắp xếp tăng dần
+        ? Array.from(new Set(dataset.map((d) => d.group))).sort(d3.ascending)
         : chartType === "Q7"
-        ? Array.from(new Set(data.map((d) => d["Nhóm hàng"]))) // Q7: Lấy từ dữ liệu gốc
-        : Array.from(new Set(dataset.map(d => d.group))) // Mặc định
+        ? Array.from(new Set(data.map((d) => d["Nhóm hàng"])))
+        : Array.from(new Set(dataset.map(d => d.group)))
       )
       .range(tableauClassic10);
 
-    // Vẽ trục
     svg.append("g")
       .call(d3.axisLeft(y).tickSize(0).tickPadding(10))
       .attr("class", "axis-label");
@@ -623,22 +584,21 @@ d3.csv("data.csv", function (d) {
         if (chartType === "Q7") {
           return d3.format(".0%")(d);
         }
-        if (d < 1000) return d;                          // Hiển thị số nhỏ hơn 1000
-        if (d < 1000000) return (d / 1000) + "K";        // Hiển thị từ 1K đến 999K
-        if (d < 1000000000) return (d / 1000000) + "M";  // Hiển thị từ 1M đến 999M
-        return (d / 1000000000) + "B";                  // Hiển thị từ 1B trở lên
+        if (d < 1000) return d;
+        if (d < 1000000) return (d / 1000) + "K";
+        if (d < 1000000000) return (d / 1000000) + "M";
+        return (d / 1000000000) + "B";
       }))
 
-    // Vẽ gridlines dọc (trục X - scaleLinear hoặc scaleBand)
     svg.selectAll("line.vertical-grid")
-      .data(x.ticks())        // Tạo các vạch lưới theo trục X
+      .data(x.ticks())
       .enter()
       .append("line")
       .attr("class", "vertical-grid")
-      .attr("x1", (d) => x(d)) // Bắt đầu từ từng giá trị của trục X
-      .attr("y1", 0)           // Bắt đầu từ đỉnh (top)
-      .attr("x2", (d) => x(d)) // Kết thúc cùng vị trí theo trục X
-      .attr("y2", height)      // Kéo xuống đáy (bottom)
+      .attr("x1", (d) => x(d))
+      .attr("y1", 0)
+      .attr("x2", (d) => x(d))
+      .attr("y2", height)
       .style("stroke", "gray")
       .style("opacity", 0.2);
     
@@ -675,8 +635,6 @@ d3.csv("data.csv", function (d) {
       })
       .on("mouseout", () => tooltip.style("visibility", "hidden"));
 
-
-    // Hiển thị giá trị trên thanh
     svg.selectAll(".label")
       .data(dataset)
       .enter()
@@ -688,7 +646,6 @@ d3.csv("data.csv", function (d) {
       .text((d) => chartType === "Q7" ? d.revenueFormatted : `${d3.format(",.0f")(d.revenue / 1000000)} triệu VND`);
 
 
-     // Thêm legend chỉ cho chart1
     if (chartType === "Q1") {
       const legend = svg.append("g")
         .attr("font-family", "sans-serif")
@@ -716,6 +673,7 @@ d3.csv("data.csv", function (d) {
   }
 
   //===================================================================================================
+  // Hàm vẽ biểu đồ dọc cho Q3, Q4, Q5, Q6
   function Ve_Chart_Doc(dataset, chartType) {
     clearChart();
     const margin = { top: 20, right: 20, bottom: 40, left: 80 };
@@ -748,10 +706,10 @@ d3.csv("data.csv", function (d) {
 
     svg.append("g")
       .call(d3.axisLeft(y).tickFormat((d) => {
-          if (d < 1000) return d;                          // Hiển thị số nhỏ hơn 1000
-          if (d < 1000000) return (d / 1000) + "K";        // Hiển thị từ 1K đến 999K
-          if (d < 1000000000) return (d / 1000000) + "M";  // Hiển thị từ 1M đến 999M
-          return (d / 1000000000) + "B";                  // Hiển thị từ 1B trở lên
+          if (d < 1000) return d;
+          if (d < 1000000) return (d / 1000) + "K";
+          if (d < 1000000000) return (d / 1000000) + "M";
+          return (d / 1000000000) + "B";
       }));
 
     svg.append("g")
@@ -762,16 +720,16 @@ d3.csv("data.csv", function (d) {
       .style("text-anchor", chartType === "Q5" ? "end" : "middle");
 
     svg.selectAll("line.horizontal-grid")
-      .data(y.ticks())  // Tạo 10 vạch lưới (có thể chỉnh số lượng)
+      .data(y.ticks())
       .enter()
       .append("line")
       .attr("class", "horizontal-grid")
-      .attr("x1", 0)            // Bắt đầu từ cạnh trái
-      .attr("y1", (d) => y(d))  // Vị trí dọc theo trục Y
-      .attr("x2", width)        // Kết thúc ở cạnh phải
-      .attr("y2", (d) => y(d))  // Cùng tọa độ Y
-      .style("stroke", "gray")  // Màu lưới
-      .style("opacity", 0.2);  // Độ mờ
+      .attr("x1", 0)
+      .attr("y1", (d) => y(d))
+      .attr("x2", width)
+      .attr("y2", (d) => y(d))
+      .style("stroke", "gray")
+      .style("opacity", 0.2);
 
     const tooltip = d3.select("body").append("div")
       .attr("class", "tooltip")
@@ -811,10 +769,10 @@ d3.csv("data.csv", function (d) {
       .enter()
       .append("text")
       .attr("class", "label")
-      .attr("x", d => x(d.item) + x.bandwidth() / 2)  // Căn giữa cột
-      .attr("y", d => y(d.revenue) - 5)  // Đặt nhãn phía trên cột
-      .attr("text-anchor", "middle")  // Căn giữa theo chiều ngang
-      .style("fill", "black")  // Màu chữ
+      .attr("x", d => x(d.item) + x.bandwidth() / 2)
+      .attr("y", d => y(d.revenue) - 5)
+      .attr("text-anchor", "middle")
+      .style("fill", "black")
       .style("font-size", "10px")
       .text(d => {
         if (chartType === "Q3") {
@@ -827,7 +785,7 @@ d3.csv("data.csv", function (d) {
   }
 
   //===================================================================================================
-  function drawLineChart(dataset, chartType) {
+  function Ve_chart_Q8(dataset, chartType) {
     // Kích thước biểu đồ
     const margin = { top: 40, right: 210, bottom: 50, left: 70 },
           width = 1000
@@ -842,7 +800,6 @@ d3.csv("data.csv", function (d) {
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Tạo danh sách các tháng (T01, T02, ...)
     const months = dataset[0].values.map(d => d.month);
 
     const x = d3.scalePoint()
@@ -860,25 +817,21 @@ d3.csv("data.csv", function (d) {
       .domain(sortedGroups)
       .range(d3.schemeTableau10);
 
-    // Tạo trục X
     svg.append("g")
       .attr("transform", `translate(0, ${height})`)
       .call(d3.axisBottom(x))
       .selectAll("text")
       .style("font-size", "12px");
 
-    // Tạo trục Y với định dạng phần trăm
     svg.append("g")
       .call(d3.axisLeft(y).tickFormat(d => `${(d * 100).toFixed(0)}%`))
       .selectAll("text")
       .style("font-size", "12px");
 
-    // Tạo đường line
     const line = d3.line()
       .x(d => x(d.month))
       .y(d => y(d.probability));
 
-    // Vẽ mỗi đường theo nhóm hàng
     svg.selectAll(".line")
       .data(dataset)
       .enter()
@@ -909,7 +862,7 @@ d3.csv("data.csv", function (d) {
       .text(d => d);
 
     svg.selectAll(".y-grid")
-      .data(y.ticks()) // Lấy các giá trị tick từ thang đo Y
+      .data(y.ticks())
       .enter()
       .append("line")
       .attr("class", "y-grid")
@@ -921,7 +874,6 @@ d3.csv("data.csv", function (d) {
       .attr("stroke-width", 0.8)
       .attr("opacity", 0.2);
 
-    // Tooltip khi hover
     const tooltip = d3.select("body").append("div")
       .attr("class", "tooltip")
       .style("position", "absolute")
@@ -963,7 +915,6 @@ d3.csv("data.csv", function (d) {
           width = 360
           height = 300
         
-    // Tạo SVG cho mỗi chart
     const svg = d3.select(`#${containerId}`)
       .append("svg")
       .attr("width", width + margin.left + margin.right)
@@ -971,18 +922,15 @@ d3.csv("data.csv", function (d) {
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Tạo thang đo Y (Mặt hàng)
     const y = d3.scaleBand()
       .domain(dataset.map(d => d.item))
       .range([0, height])
       .padding(0.3);
 
-    // Tạo thang đo X (Xác suất bán hàng)
     const x = d3.scaleLinear()
       .domain([0, d3.max(dataset, d => d.revenue)])
       .range([0, width-70]);
 
-    // Tooltip
     const tooltip = d3.select("body").append("div")
       .attr("class", "tooltip")
       .style("position", "absolute")
@@ -1015,21 +963,18 @@ d3.csv("data.csv", function (d) {
       })
       .on("mouseout", () => tooltip.style("opacity", 0));
 
-    // Vẽ trục Y (Mặt hàng)
     svg.append("g")
       .attr("class", "y-axis")
       .call(d3.axisLeft(y));
 
-    // Vẽ trục X (Xác suất, dạng phần trăm)
     svg.append("g")
       .attr("transform", `translate(0, ${height})`)
       .call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(".0%")));
 
-    // Thêm tiêu đề cho biểu đồ
     svg.append("text")
-    .attr("x", width / 4)              // Căn giữa theo chiều ngang
-    .attr("y", -20)                    // Đẩy lên phía trên
-    .attr("text-anchor", "middle")     // Căn giữa văn bản
+    .attr("x", width / 4)
+    .attr("y", -20)
+    .attr("text-anchor", "middle")
     .style("font-size", "18px")
     .style("font-weight", "bold")
     .style("fill", "#4E79A7")
@@ -1043,17 +988,14 @@ d3.csv("data.csv", function (d) {
           width = 470
           height = 270
   
-    // Xóa nội dung cũ trong container
     d3.select(`#${containerId}`).html("");
 
-    // Tạo container cho mỗi biểu đồ con
     const chartContainer = d3.select(`#${containerId}`)
       .append("div")
       .attr("class", "chart-wrapper")
       .style("display", "inline-block")
       .style("margin", "20px");
 
-    // Tạo SVG
     const svg = chartContainer
       .append("svg")
       .attr("width", width + margin.left + margin.right)
@@ -1061,12 +1003,10 @@ d3.csv("data.csv", function (d) {
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Tạo thang đo cho trục X (danh sách các tháng)
     const x = d3.scalePoint()
       .domain(dataset[0].values.map(d => d.month))
       .range([50, 450]);
 
-    // Tạo thang đo cho trục Y (probability từ 0 đến 1)
     const y = d3.scaleLinear()
     .domain([
       d3.max(dataset, d => d3.max(d.values, v => v.probability)) *
@@ -1075,14 +1015,12 @@ d3.csv("data.csv", function (d) {
     ])
     .range([250, 50]);
 
-    // Tạo trục X
     svg.append("g")
       .attr("transform", `translate(0, ${height})`)
       .call(d3.axisBottom(x))
       .selectAll("text")
       .style("font-size", "8px");
 
-    // Tạo trục Y với định dạng phần trăm
     svg.append("g")
       .attr("transform", `translate(40, 0)`)
       .call(d3.axisLeft(y).ticks(5).tickFormat(d => `${(d * 100).toFixed(0)}%`))
@@ -1092,17 +1030,13 @@ d3.csv("data.csv", function (d) {
         console.log(dataset);
         console.log(dataset.items);
 
-    // Vẽ các đường line
     dataset.forEach((item, index) => {
       const color = colorScale(item.item);
 
-
-      // Tạo đường line
       const line = d3.line()
       .x(d => x(d.month))
       .y(d => y(d.probability));
 
-      // Vẽ mỗi đường theo nhóm hàng
       svg.selectAll(".line")
         .data(dataset)
         .enter()
@@ -1114,13 +1048,13 @@ d3.csv("data.csv", function (d) {
         .attr("d", d => line(d.values));
 
       svg.selectAll(".y-grid")
-        .data(y.ticks(5)) // Lấy các giá trị tick từ thang đo Y
+        .data(y.ticks(5))
         .enter()
         .append("line")
         .attr("class", "y-grid")
-        .attr("x1", 40) // Dịch lưới ngang theo đúng vị trí trục Y
-        .attr("x2", width + 40) // Đảm bảo lưới phủ toàn bộ chiều rộng
-        .attr("y1", d => y(d) + 10) // Đồng bộ với trục Y (kèm offset nếu cần)
+        .attr("x1", 40)
+        .attr("x2", width + 40)
+        .attr("y1", d => y(d) + 10)
         .attr("y2", d => y(d) + 10)
         .attr("stroke", "#000")
         .attr("stroke-width", 0.8)
@@ -1136,7 +1070,7 @@ d3.csv("data.csv", function (d) {
         .style("border", "1px solid #ccc")
         .style("padding", "8px")
         .style("border-radius", "4px");
-      // Vẽ các điểm trên đường
+
       svg.selectAll(`.dot-${index}`)
           .data(item.values)
           .enter()
@@ -1162,15 +1096,13 @@ d3.csv("data.csv", function (d) {
           .on("mouseout", () => tooltip.style("visibility", "hidden"));
     });
     
-
-
-    // Tiêu đề biểu đồ: Hiển thị Group + Item
     svg.append("text")
       .attr("x", width / 2)
       .attr("y", -10)
       .attr("text-anchor", "middle")
       .style("font-size", "16px")
       .style("font-weight", "bold")
+      .style("fill", "#4E79A7")
       .text(groupData);
   }
   
@@ -1201,12 +1133,10 @@ d3.csv("data.csv", function (d) {
       .domain(new Set(dataset.map(d => d.group)))
       .range(tableauClassic10);
 
-    // Vẽ trục Y
     svg.append("g")
       .call(d3.axisLeft(y).tickFormat((d) => d))
       .attr("class", "axis-label");
 
-    // Vẽ trục X
     const xAxis = svg.append("g")
       .attr("transform", `translate(0, ${height})`)
       .call(d3.axisBottom(x).tickSize(0).tickPadding(10));
@@ -1215,10 +1145,9 @@ d3.csv("data.csv", function (d) {
       xAxis.selectAll("text")
         .style("text-anchor", "end")
         .attr("transform", "rotate(-90) translate(-2,-12)")
-        .text(d => `${(d+50000) / 1000}K`); // Hiển thị dạng 50K, 100K...
+        .text(d => `${(d+50000) / 1000}K`);
     }
 
-    // Vẽ gridlines ngang (trục Y - scaleLinear)
     svg.selectAll("line.horizontal-grid")
       .data(y.ticks())
       .enter()
@@ -1231,7 +1160,6 @@ d3.csv("data.csv", function (d) {
       .style("stroke", "gray")
       .style("opacity", 0.2);
 
-    // Tạo phần tử tooltip (ẩn mặc định)
     const tooltip = d3.select("#chart")
       .append("div")
       .attr("class", "tooltip")
@@ -1243,15 +1171,14 @@ d3.csv("data.csv", function (d) {
       .style("box-shadow", "0 2px 6px rgba(0,0,0,0.2)")
       .style("opacity", 0);
 
-    // Vẽ các thanh dọc
     svg.selectAll(".bar")
       .data(dataset)
       .enter()
       .append("rect")
       .attr("class", "bar")
-      .attr("x", (d) => x(d.item) - (x.bandwidth() * 0.14))  // Điều chỉnh để căn giữa khi to hơn
+      .attr("x", (d) => x(d.item) - (x.bandwidth() * 0.14))
       .attr("y", (d) => y(d.customers))
-      .attr("width", x.bandwidth() * 1.16) // Tăng kích thước thanh
+      .attr("width", x.bandwidth() * 1.16)
       .attr("height", (d) => height - y(d.customers))
       .attr("fill", (d) => colorScale(d.group))
       .on("mouseover", (event, d) => {
