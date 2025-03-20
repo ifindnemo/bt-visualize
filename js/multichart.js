@@ -162,9 +162,15 @@ d3.csv("data.csv", function (d) {
         (v) => {
             const totalRevenue = d3.sum(v, (d) => +d["Thành tiền"]);
 
+            const orderCount = d3.sum(v, (d) => +d["SL"]);
+
             const uniqueDays = new Set(v.map(d => parseDate(d["Thời gian tạo đơn"]))).size;
 
-            return uniqueDays > 0 ? totalRevenue / uniqueDays : 0;
+            return {
+              avgRevenue: uniqueDays > 0 ? totalRevenue / uniqueDays : 0,
+              orderCount: uniqueDays > 0 ? orderCount / uniqueDays : 0
+          };
+
         },
         (d) => dayMapping[formatDayOfWeek(new Date(d["Thời gian tạo đơn"]))]
     );
@@ -179,9 +185,10 @@ d3.csv("data.csv", function (d) {
         "Chủ nhật": 7
     };
 
-    const dataset = Array.from(revenueByDayOfWeek, ([day, avgRevenue]) => ({
+    const dataset = Array.from(revenueByDayOfWeek, ([day, { avgRevenue, orderCount }]) => ({
         item: day,
         revenue: avgRevenue,
+        orderCount: orderCount,
         group: "Ngày trong tuần",
     })).sort((a, b) => dayOrder[a.item] - dayOrder[b.item]);
     
